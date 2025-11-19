@@ -1,3 +1,10 @@
+streamlit
+numpy
+opencv-python-headless
+Pillow
+transformers
+torch
+torchvision
+torchaudio
 fastapi
 uvicorn[standard]
-pydantic
