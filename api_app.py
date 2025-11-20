@@ -15,15 +15,9 @@ def root():
 
 @app.post("/detect")
 async def detect_objects(file: UploadFile = File(...)):
-    """
-    Accepts multipart/form-data with a 'file' field (image),
-    runs segmentation, and returns detected classes.
-    """
-    image_bytes = await file.read()
-    detections = run_detection(image_bytes, processor, model)
-
+    content = await file.read()
     return {
         "filename": file.filename,
+        "size": len(content),
         "content_type": file.content_type,
-        "detections": detections,
     }
