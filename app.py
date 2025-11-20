@@ -256,4 +256,3 @@ if uploaded_file:
             )
     else:
         st.info("No objects available to recolor for this image.")
-

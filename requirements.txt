@@ -1,10 +1,9 @@
-streamlit
-numpy
-opencv-python-headless
-Pillow
-transformers
+fastapi
+uvicorn[standard]
+pillow
 torch
 torchvision
 torchaudio
-fastapi
-uvicorn[standard]
+transformers
+numpy
+opencv-python
