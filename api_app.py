@@ -8,10 +8,10 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Optional: CORS for browser / Salesforce
+# CORS so Salesforce / browser can call it easily
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # later you can restrict to your SF domain
+    allow_origins=["*"],   # you can restrict later
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -40,5 +40,4 @@ async def detect_objects(file: UploadFile = File(...)):
         }
 
     except Exception as e:
-        # Any Python error shows up here
         raise HTTPException(status_code=500, detail=str(e))
