@@ -5,7 +5,7 @@ from io import BytesIO
 from PIL import Image
 
 # Load YOLOv8 nano model (smallest). On first run it downloads yolov8n.pt (~6MB).
-model = YOLO("yolov8n.pt")  # COCO-pretrained: person, chair, couch, tv, etc.
+model = YOLO("yolov8s.pt")  # COCO-pretrained: person, chair, couch, tv, etc.
 
 
 def run_detection(image_bytes: bytes, conf_threshold: float = 0.3) -> List[Dict]:
