@@ -1,17 +1,19 @@
 # api_app.py
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from detector import run_detection
+from pydantic import BaseModel
+import base64
+
+from segmentor import segmentor, get_label_name
 
 app = FastAPI(
-    title="YOLOv8 Object Detection API",
+    title="Roomvo-style Interior API",
     version="1.0.0"
 )
 
-# CORS so that browser / Salesforce (if ever used directly) can call it
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # later you can restrict to your Salesforce domain
+    allow_origins=["*"],   # restrict to your domains later
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -23,29 +25,57 @@ def root():
     return {"status": "ok"}
 
 
-@app.post("/detect")
-async def detect_objects(file: UploadFile = File(...)):
+@app.post("/segment")
+async def segment_image(file: UploadFile = File(...)):
     """
-    Accepts an uploaded image file, runs YOLOv8,
-    and returns detections as JSON.
+    Accepts image, runs segmentation, returns:
+    - session_id
+    - list of classes present (id + label)
     """
     try:
-        if file.content_type is None or not file.content_type.startswith("image/"):
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unsupported content type: {file.content_type}"
-            )
-
         image_bytes = await file.read()
-        detections = run_detection(image_bytes)
+        session_id, pil_img, seg_map, unique_classes = segmentor.segment(image_bytes)
+
+        regions = []
+        for cid in unique_classes:
+            label_name = get_label_name(int(cid))
+            regions.append({
+                "class_id": int(cid),
+                "label": label_name
+            })
 
         return {
-            "filename": file.filename,
-            "content_type": file.content_type,
-            "detections": detections
+            "session_id": session_id,
+            "width": pil_img.size[0],
+            "height": pil_img.size[1],
+            "regions": regions
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    except HTTPException:
-        raise
+
+class RecolorRequest(BaseModel):
+    session_id: str
+    class_id: int
+    color_hex: str  # "#RRGGBB"
+
+
+@app.post("/recolor")
+async def recolor_region(req: RecolorRequest):
+    """
+    Recolors one class_id in a session image with color_hex.
+    Returns base64 PNG of updated image.
+    """
+    try:
+        png_bytes = segmentor.recolor(req.session_id, req.class_id, req.color_hex)
+        b64 = base64.b64encode(png_bytes).decode("utf-8")
+        return {
+            "image_base64": b64,
+            "session_id": req.session_id,
+            "class_id": req.class_id,
+            "color_hex": req.color_hex
+        }
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
